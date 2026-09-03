@@ -1,14 +1,24 @@
 # Build Prompt: Sozamen — Persian Skincare/Cosmetics Shop (MVP)
 
-Build a minimal, modular e-commerce web app called **Sozamen** using **Next.js (App Router)** for a skincare and cosmetics brand. All UI text is in **Persian/Farsi**, but the layout direction is **LTR** (not RTL). Use TypeScript.
+Build a minimal, modular e-commerce web app called **Sozamen** using **Next.js (App Router)** for a skincare and cosmetics brand. All UI text and page layouts use **Persian/Farsi RTL** direction. Use TypeScript.
 
 ## Visual Direction
+
 - Palette: warm neutrals — ivory, rose beige, porcelain, skin-tone/nude accents. Soft, minimal, boutique-cosmetics feel. No harsh contrast; use warm off-whites for backgrounds, muted rose/terracotta for accents and CTAs.
 - Typography: clean, elegant, good Farsi font support (e.g. Vazirmatn or similar variable font).
 - Top navigation bar (not sidebar) on all pages: Logo | Home | Shop | About Us | Login/Account icon.
 - Keep it minimal — generous whitespace, soft rounded corners, subtle shadows.
 
+## Responsive Behavior
+
+- Support desktop, tablet, and mobile layouts down to 320px wide without horizontal overflow.
+- At 850px and below, replace the centered desktop navigation links with an accessible menu button and dropdown navigation.
+- The mobile menu closes from its close button, backdrop, selected link, or Escape key.
+- Product grids, hero content, product details, cart rows, checkout summaries, profile panels, admin rows, order details, forms, and footer columns adapt to narrow screens.
+- Keep account and cart actions visible in the mobile header.
+
 ## Tech Stack
+
 - Next.js App Router + TypeScript
 - SQLite as the database (use Prisma as ORM for easy future migration to Postgres)
 - Local file storage for product images (e.g. `/public/uploads`) for now, structured so it can be swapped for cloud storage later
@@ -17,6 +27,7 @@ Build a minimal, modular e-commerce web app called **Sozamen** using **Next.js (
 - Reserve a top-level `/docs` directory in the project (can be empty or have a placeholder README for now) — this is where design style guides and Product Requirement Documents (PRDs) will be added later as markdown files for reference during future development. No functionality needed here, just make sure the project structure doesn't conflict with adding it.
 
 ## Data Models (Prisma schema)
+
 - **User**: id, phone, name, address, role (`customer` | `admin`), createdAt
 - **Product**: id, name, description, price, imageUrl, createdAt, updatedAt
 - **Comment**: id, productId, userId, text, createdAt
@@ -26,6 +37,7 @@ Build a minimal, modular e-commerce web app called **Sozamen** using **Next.js (
 ## Pages & Features
 
 ### 1. Home (Landing)
+
 Layout reference (trimmed to MVP essentials — no ratings, wishlist, or discount pricing):
 
 - **Top nav**: Logo left, center links (Home, Shop, About Us, Contact — no Blog/Categories for MVP), right icons (Search optional, Account, Cart with item-count badge)
@@ -40,21 +52,26 @@ Layout reference (trimmed to MVP essentials — no ratings, wishlist, or discoun
 - Skip: Shop by Categories row, Promo banner with stats, Blog — these are good v2 additions but out of scope for MVP
 
 ### 2. Shop
+
 Same simple product card style as the Home bestsellers section, in a full grid layout.
+
 - Grid of products (image, name, price)
 - Click a product → **Product Detail Page**: large image, description, price, available stock, quantity selector, "Add to Cart" button, and comments section below.
-- Product comments and their input use RTL direction and right alignment even though the surrounding site layout remains LTR.
+- Product comments and their input inherit the global RTL direction and right alignment.
 - A comment can be deleted by its author or by an administrator. The server must verify ownership or the admin role before deletion.
 - **Admin-only**: a small pencil/edit icon appears on each product card (only visible when logged in as admin) → opens edit form (name, price, description, image upload). Also an "Add Product" button visible only to admin.
 
 ### 3. About Us
+
 - Simple static content page, brand story.
 
 ### 4. Login
+
 - Phone number input → "send code" → OTP input (mock: accept any 4-6 digit code and log the user in)
 - Build the auth flow (session/cookie-based) as if it were real, so swapping in a real SMS provider later is a drop-in change to one module.
 
 ### 5. Cart & Checkout
+
 - Add to cart, view cart, adjust quantities, checkout form (confirm address/name/phone), place order.
 - Customers can select multiple units before adding a product, and cart quantities cannot exceed current stock.
 - Checkout validates stock server-side and reduces inventory atomically when the order is placed.
@@ -62,6 +79,7 @@ Same simple product card style as the Home bestsellers section, in a full grid l
 - Order confirmation page.
 
 ### 6. User Dashboard
+
 - Account icon links authenticated users directly to `/dashboard/profile`; guests are sent to login.
 - View/edit profile: profile picture, name, phone, and address.
 - Profile pictures accept PNG, JPEG, or WebP files up to 3 MB and are stored locally under `/public/uploads/profiles/`.
@@ -70,6 +88,7 @@ Same simple product card style as the Home bestsellers section, in a full grid l
 - Provide a clear logout action that removes the session cookie and returns the user home.
 
 ### 7. Admin Dashboard
+
 - Customer list with their info (name, phone, address, order count)
 - Product management (list/add/edit/delete) — can live here and/or via the inline pencil icon on the shop page (build both entry points using the same shared component)
 - Product add/edit forms include a non-negative inventory count.
@@ -79,6 +98,7 @@ Same simple product card style as the Home bestsellers section, in a full grid l
 - Admin can set an order to paid, in progress, done, cancelled, pending, or payment failed, and can permanently delete an order.
 
 ## Auth & Roles — Admin vs Customer Separation
+
 - Single `User` table, distinguished by a `role` field (`customer` | `admin`) — no separate admin table, to keep it simple for MVP.
 - Every phone number that logs in via the (mock) OTP flow is created as `role: customer` by default. There is no self-serve way to become admin — admin accounts are only created by seeding the database directly (e.g. via a Prisma seed script), never through the public login/signup flow.
 - Seed script creates exactly one demo admin (fixed phone number) so it can be tested via the same login screen — logging in with that phone number logs you in as admin, any other phone number logs in as a customer.
@@ -91,22 +111,26 @@ Same simple product card style as the Home bestsellers section, in a full grid l
 - This structure keeps room to grow later (e.g. multiple admins, permission levels) without changing the schema — just add more users with `role: admin`.
 
 ## Product Images — MVP Strategy
+
 - Use real-looking skincare/cosmetics product photos for the seed data (not generic gray boxes) so the MVP actually feels usable and gives a true sense of the final look — e.g. free stock photos (Unsplash/Pexels-style skincare bottle/jar photography) saved locally into `/public/uploads/products/`.
 - Every product's image is just a field (`imageUrl`) pointing at a file path — nothing is hardcoded into components — so swapping in real product photography later is just replacing files and/or re-uploading through the admin's product form, no code changes needed.
 - The admin "Add/Edit Product" form includes a real image upload field (not just a URL field) from day one, storing to `/public/uploads/products/`, so admin can already replace placeholder photos with real ones through the UI even in MVP.
 - Fall back to a clean branded placeholder image (soft ivory/rose square with a simple icon) only if a product somehow has no image, so the UI never breaks.
 
 ## Project Docs Directory
+
 - Create a `/docs` folder at the project root (even if mostly empty for now) reserved for future markdown documentation — e.g. design style guides, Product Requirement Documents (PRDs), and other planning docs.
 - Keep this folder out of the app's build/runtime logic (it's just reference material, not consumed by the app), so it can grow freely without affecting the codebase.
 
 ## Global Footer and Legal Page
+
 - Show the footer on every page with an example shop phone number and icon.
 - Include template links for Telegram and Instagram with their respective icons. Replace the example destinations when official accounts are available.
 - Include a link to `/legal`.
 - The legal page is a styled placeholder for future terms, purchase conditions, delivery and returns policy, and privacy policy content.
 
 ## Non-goals for this MVP (explicitly skip)
+
 - Real SMS OTP integration
 - Real payment gateway integration
 - Comment moderation/approval workflow
@@ -114,4 +138,5 @@ Same simple product card style as the Home bestsellers section, in a full grid l
 - Don't use emdash and instead of it use hythen
 
 ## Deliverable
+
 A working Next.js app with seed data (a handful of demo products, one admin user, one demo customer) so the flows can be clicked through end-to-end: browse → product detail → comment (if logged in) → add to cart → checkout → fake payment → order appears in user dashboard and admin dashboard.

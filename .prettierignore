@@ -1,0 +1,5 @@
+.next
+node_modules
+prisma/*.db*
+public/uploads
+package-lock.json

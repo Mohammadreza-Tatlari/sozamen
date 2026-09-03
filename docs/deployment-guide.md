@@ -253,14 +253,13 @@ Then verify these public flows:
 
 ## 13. Common commands
 
-| Task | Command |
-| --- | --- |
-| Install exact dependencies | `npm ci` |
-| Development on port 3000 | `npm run dev` |
-| Development on port 4000 | `npm run dev -- -p 4000` |
-| Apply the database schema | `npx prisma db push` |
-| Seed demo data | `npm run db:seed` |
-| Create a production build | `npm run build` |
-| Production on port 3000 | `npm start -- -p 3000` |
-| Production on port 4000 | `npm start -- -p 4000` |
-
+| Task                       | Command                  |
+| -------------------------- | ------------------------ |
+| Install exact dependencies | `npm ci`                 |
+| Development on port 3000   | `npm run dev`            |
+| Development on port 4000   | `npm run dev -- -p 4000` |
+| Apply the database schema  | `npx prisma db push`     |
+| Seed demo data             | `npm run db:seed`        |
+| Create a production build  | `npm run build`          |
+| Production on port 3000    | `npm start -- -p 3000`   |
+| Production on port 4000    | `npm start -- -p 4000`   |

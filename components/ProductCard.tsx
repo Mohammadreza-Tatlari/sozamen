@@ -1,2 +1,33 @@
-import Link from "next/link";import {Pencil} from "lucide-react";import {money} from "@/lib/format";
-export function ProductCard({product,isAdmin=false}:{product:{id:number,name:string,price:number,imageUrl:string},isAdmin?:boolean}){return <article className="product-card">{isAdmin&&<Link className="icon-btn edit" href={`/admin/products/${product.id}`} aria-label="ویرایش محصول"><Pencil size={16}/></Link>}<Link href={`/shop/${product.id}`} className="product-image"><img src={product.imageUrl||"/uploads/products/placeholder.svg"} alt={product.name}/></Link><div className="product-info"><h3><Link href={`/shop/${product.id}`}>{product.name}</Link></h3><span className="price">{money(product.price)}</span></div></article>}
+import Link from "next/link";
+import { Pencil } from "lucide-react";
+import { money } from "@/lib/format";
+export function ProductCard({
+  product,
+  isAdmin = false,
+}: {
+  product: { id: number; name: string; price: number; imageUrl: string };
+  isAdmin?: boolean;
+}) {
+  return (
+    <article className="product-card">
+      {isAdmin && (
+        <Link
+          className="icon-btn edit"
+          href={`/admin/products/${product.id}`}
+          aria-label="ویرایش محصول"
+        >
+          <Pencil size={16} />
+        </Link>
+      )}
+      <Link href={`/shop/${product.id}`} className="product-image">
+        <img src={product.imageUrl || "/uploads/products/placeholder.svg"} alt={product.name} />
+      </Link>
+      <div className="product-info">
+        <h3>
+          <Link href={`/shop/${product.id}`}>{product.name}</Link>
+        </h3>
+        <span className="price">{money(product.price)}</span>
+      </div>
+    </article>
+  );
+}

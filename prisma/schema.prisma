@@ -8,56 +8,56 @@ datasource db {
 }
 
 model User {
-  id Int @id @default(autoincrement())
-  phone String @unique
-  name String
-  address String @default("")
-  profileImageUrl String @default("")
-  role String @default("customer")
-  createdAt DateTime @default(now())
-  comments Comment[]
-  orders Order[]
+  id              Int       @id @default(autoincrement())
+  phone           String    @unique
+  name            String
+  address         String    @default("")
+  profileImageUrl String    @default("")
+  role            String    @default("customer")
+  createdAt       DateTime  @default(now())
+  comments        Comment[]
+  orders          Order[]
 }
 
 model Product {
-  id Int @id @default(autoincrement())
-  name String
+  id          Int         @id @default(autoincrement())
+  name        String
   description String
-  price Int
-  stock Int @default(20)
-  imageUrl String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  comments Comment[]
-  orderItems OrderItem[]
+  price       Int
+  stock       Int         @default(20)
+  imageUrl    String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  comments    Comment[]
+  orderItems  OrderItem[]
 }
 
 model Comment {
-  id Int @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   productId Int
-  userId Int
-  text String
+  userId    Int
+  text      String
   createdAt DateTime @default(now())
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Order {
-  id Int @id @default(autoincrement())
-  userId Int
-  trackingCode String @unique
-  status String @default("pending")
-  createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id])
-  items OrderItem[]
+  id           Int         @id @default(autoincrement())
+  userId       Int
+  trackingCode String      @unique
+  status       String      @default("pending")
+  createdAt    DateTime    @default(now())
+  user         User        @relation(fields: [userId], references: [id])
+  items        OrderItem[]
 }
 
 model OrderItem {
-  id Int @id @default(autoincrement())
-  orderId Int
-  productId Int
-  quantity Int
+  id              Int     @id @default(autoincrement())
+  orderId         Int
+  productId       Int
+  quantity        Int
   priceAtPurchase Int
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product @relation(fields: [productId], references: [id])
 }

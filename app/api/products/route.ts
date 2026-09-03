@@ -1,2 +1,25 @@
-import {NextResponse} from "next/server";import {requireAdmin} from "@/lib/auth/session";import {saveProductImage} from "@/lib/uploads";import {db} from "@/lib/db";
-export async function POST(req:Request){try{await requireAdmin();const f=await req.formData();const image=f.get("image");if(!(image instanceof File)||!image.size)throw new Error("تصویر محصول الزامی است");const imageUrl=await saveProductImage(image);const p=await db.product.create({data:{name:String(f.get("name")),description:String(f.get("description")),price:Math.max(0,Number(f.get("price"))),stock:Math.max(0,Number(f.get("stock"))),imageUrl}});return NextResponse.json(p)}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"خطا"},{status:403})}}
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth/session";
+import { saveProductImage } from "@/lib/uploads";
+import { db } from "@/lib/db";
+export async function POST(req: Request) {
+  try {
+    await requireAdmin();
+    const f = await req.formData();
+    const image = f.get("image");
+    if (!(image instanceof File) || !image.size) throw new Error("تصویر محصول الزامی است");
+    const imageUrl = await saveProductImage(image);
+    const p = await db.product.create({
+      data: {
+        name: String(f.get("name")),
+        description: String(f.get("description")),
+        price: Math.max(0, Number(f.get("price"))),
+        stock: Math.max(0, Number(f.get("stock"))),
+        imageUrl,
+      },
+    });
+    return NextResponse.json(p);
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "خطا" }, { status: 403 });
+  }
+}

@@ -1,2 +1,4 @@
-import {redirect} from "next/navigation";
-export default function Dashboard(){redirect("/dashboard/profile")}
+import { redirect } from "next/navigation";
+export default function Dashboard() {
+  redirect("/dashboard/profile");
+}

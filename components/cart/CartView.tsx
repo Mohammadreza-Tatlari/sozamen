@@ -1,2 +1,70 @@
-"use client";import {useEffect,useState} from "react";import Link from "next/link";import {Trash2} from "lucide-react";import {CartProduct} from "./AddToCart";import {money} from "@/lib/format";
-export function CartView(){const[cart,setCart]=useState<CartProduct[]>([]);useEffect(()=>setCart(JSON.parse(localStorage.getItem("sozamen-cart")||"[]")),[]);function save(next:CartProduct[]){setCart(next);localStorage.setItem("sozamen-cart",JSON.stringify(next));dispatchEvent(new Event("cart-change"))}function qty(id:number,d:number){save(cart.map(x=>x.id===id?{...x,quantity:Math.max(1,Math.min(x.stock??999,x.quantity+d))}:x))}const total=cart.reduce((s,x)=>s+x.price*x.quantity,0);if(!cart.length)return <div className="empty">سبد شما خالی است.<br/><br/><Link className="button" href="/shop">رفتن به فروشگاه</Link></div>;return <section className="form-card wide">{cart.map(x=><div className="cart-row" key={x.id}><img src={x.imageUrl} alt={x.name}/><div><b>{x.name}</b><div className="price">{money(x.price)}</div></div><div className="qty"><button onClick={()=>qty(x.id,-1)}>−</button><span>{x.quantity}</span><button disabled={x.quantity>=(x.stock??999)} onClick={()=>qty(x.id,1)}>+</button></div><button className="icon-btn" onClick={()=>save(cart.filter(i=>i.id!==x.id))} aria-label="حذف"><Trash2 size={17}/></button></div>)}<div className="summary"><div><small>مجموع</small><h2>{money(total)}</h2></div><Link className="button" href="/checkout">ادامه و تسویه حساب</Link></div></section>}
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Trash2 } from "lucide-react";
+import { CartProduct } from "./AddToCart";
+import { money } from "@/lib/format";
+export function CartView() {
+  const [cart, setCart] = useState<CartProduct[]>([]);
+  useEffect(() => setCart(JSON.parse(localStorage.getItem("sozamen-cart") || "[]")), []);
+  function save(next: CartProduct[]) {
+    setCart(next);
+    localStorage.setItem("sozamen-cart", JSON.stringify(next));
+    dispatchEvent(new Event("cart-change"));
+  }
+  function qty(id: number, d: number) {
+    save(
+      cart.map((x) =>
+        x.id === id ? { ...x, quantity: Math.max(1, Math.min(x.stock ?? 999, x.quantity + d)) } : x,
+      ),
+    );
+  }
+  const total = cart.reduce((s, x) => s + x.price * x.quantity, 0);
+  if (!cart.length)
+    return (
+      <div className="empty">
+        سبد شما خالی است.
+        <br />
+        <br />
+        <Link className="button" href="/shop">
+          رفتن به فروشگاه
+        </Link>
+      </div>
+    );
+  return (
+    <section className="form-card wide">
+      {cart.map((x) => (
+        <div className="cart-row" key={x.id}>
+          <img src={x.imageUrl} alt={x.name} />
+          <div>
+            <b>{x.name}</b>
+            <div className="price">{money(x.price)}</div>
+          </div>
+          <div className="qty">
+            <button onClick={() => qty(x.id, -1)}>−</button>
+            <span>{x.quantity}</span>
+            <button disabled={x.quantity >= (x.stock ?? 999)} onClick={() => qty(x.id, 1)}>
+              +
+            </button>
+          </div>
+          <button
+            className="icon-btn"
+            onClick={() => save(cart.filter((i) => i.id !== x.id))}
+            aria-label="حذف"
+          >
+            <Trash2 size={17} />
+          </button>
+        </div>
+      ))}
+      <div className="summary">
+        <div>
+          <small>مجموع</small>
+          <h2>{money(total)}</h2>
+        </div>
+        <Link className="button" href="/checkout">
+          ادامه و تسویه حساب
+        </Link>
+      </div>
+    </section>
+  );
+}
