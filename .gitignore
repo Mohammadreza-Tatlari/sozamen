@@ -1,0 +1,12 @@
+node_modules
+.next
+.env
+prisma/*.db*
+public/uploads/products/*
+!public/uploads/products/.gitkeep
+public/uploads/profiles/*
+!public/uploads/profiles/.gitkeep
+!public/uploads/products/placeholder.svg
+!public/uploads/products/serum.png
+!public/uploads/products/cream.png
+!public/uploads/products/cleanser.png
