@@ -2,11 +2,15 @@
 
 This guide explains how to install, configure, and run the Sozamen Next.js application locally or on a Linux server.
 
+For automatic deployments after every push to GitHub, see the
+[GitHub to VPS deployment pipeline](./github-vps-deployment-pipeline.md).
+
 ## 1. Server requirements
 
 Install the following tools before uploading the project:
 
-- Node.js 20 LTS or newer
+- Node.js 20 LTS or Node.js 22 LTS (Node.js 22 is recommended for this
+  project's Prisma 6 version)
 - npm 10 or newer
 - A Linux user with permission to write inside the project directory
 - A process manager such as systemd or PM2 for a long-running production service

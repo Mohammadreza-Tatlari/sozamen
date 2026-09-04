@@ -7,3 +7,4 @@ Reserved for design guides, PRDs, and future planning documents.
 - [Inventory and order management PRD](./prd-inventory-order-management.md)
 - [Responsive layout PRD](./prd-responsive-layout.md)
 - [Setup and deployment guide](./deployment-guide.md)
+- [GitHub to VPS deployment pipeline](./github-vps-deployment-pipeline.md)
