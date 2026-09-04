@@ -35,6 +35,73 @@ textarea {
 button {
   cursor: pointer;
 }
+.preview-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(182, 104, 114, 0.2), transparent 34%),
+    linear-gradient(145deg, #fffaf5 0%, #f6e5e3 52%, #efd0d4 100%);
+  overflow-y: auto;
+}
+.preview-gate-card {
+  width: min(100%, 440px);
+  padding: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 30px;
+  background: rgba(255, 253, 251, 0.92);
+  box-shadow: 0 28px 80px rgba(83, 48, 51, 0.18);
+  backdrop-filter: blur(18px);
+}
+.preview-gate-mark {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 26px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: white;
+  font-family: Georgia, serif;
+  font-size: 32px;
+  box-shadow: 0 12px 28px rgba(57, 45, 46, 0.2);
+}
+.preview-gate-card h1 {
+  margin: 8px 0 12px;
+  font-size: clamp(30px, 7vw, 42px);
+  font-weight: 500;
+}
+.preview-gate-card > p {
+  margin: 0 0 28px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.preview-gate-card .field {
+  margin-top: 22px;
+}
+.preview-gate-card input {
+  text-align: left;
+}
+.preview-gate-error {
+  color: #8b303b;
+  border-color: #e8b8bd;
+  background: #fff0f1;
+}
+.preview-gate-submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: 18px;
+}
+.preview-gate-card small {
+  display: block;
+  margin-top: 18px;
+  color: var(--muted);
+  text-align: center;
+}
 .container {
   width: min(1180px, calc(100% - 40px));
   margin: auto;

@@ -40,7 +40,7 @@ The VPS audit confirmed:
   `git@github-sozamen:Mohammadreza-Tatlari/sozamen.git`.
 - The read-only GitHub deploy key and SSH alias work.
 - `/var/www/sozamen/deploy.sh` accepts a full commit SHA.
-- Node.js 22 is available through `/home/sozamen/.local/node-current`.
+- Node.js 20.20.2 is available through `/home/sozamen/.local/node-current`.
 - `sozamen` can restart only `sozamen.service` without a password.
 - Persistent `.env`, SQLite, uploads, releases, and backups are prepared.
 
@@ -101,6 +101,24 @@ TARGET_COMMIT="$(git -C /var/www/sozamen/repository rev-parse origin/main)"
 Do not use an ordinary `git pull` inside a release directory. `deploy.sh`
 creates an isolated release for the exact commit, applies migrations, builds it,
 switches the `current` symlink, restarts the application, and checks its health.
+
+For the temporary preview gate, add this only to
+`/var/www/sozamen/shared/.env` before deploying:
+
+```env
+PREVIEW_PASSWORD="use-a-unique-temporary-password"
+PREVIEW_COOKIE_SECURE="true"
+```
+
+Do not commit the real password. Because each release links the shared `.env`,
+the setting survives future deployments. Restarting the application is required
+after changing or removing it.
+
+Keep `PREVIEW_COOKIE_SECURE` set to `true` when using HTTPS. If you are still
+temporarily opening `http://SERVER_IP:3000`, set it to `false`; otherwise the
+browser will not send the preview cookie over the unencrypted connection. This
+HTTP exception is only suitable for a short test because the password itself is
+not encrypted in transit.
 
 ## 5. Verify the deployment
 
@@ -166,6 +184,65 @@ journalctl -u sozamen -n 300 --no-pager
 readlink -f /var/www/sozamen/current
 ls -lt /var/www/sozamen/releases
 ```
+
+### `npm ci` appears to run forever
+
+The first production attempts on 2026-09-04 remained inside `npm ci` for many
+minutes. Their npm debug logs showed repeated `ETIMEDOUT` and `ECONNRESET`
+errors while downloading package tarballs from `registry.npmjs.org`. CPU and
+memory were not the cause, and the release had not reached Prisma, Next.js
+build, symlink switching, or service restart.
+
+Further testing identified the cause: real package tarballs downloaded quickly
+over IPv4, while the same registry endpoint timed out over IPv6. A successful
+`curl -I` request therefore did not prove that npm's full download path worked.
+
+If there has been no new npm log activity and no network socket for several
+minutes, interrupt the original deployment with `Ctrl+C`. This is safe while
+`current` has not switched. Confirm it stopped:
+
+```bash
+pgrep -af 'deploy.sh|npm ci'
+```
+
+Check connectivity and npm's cache:
+
+```bash
+curl -I --connect-timeout 10 --max-time 20 https://registry.npmjs.org/
+npm cache verify
+```
+
+Add this after the deployment script exports its Node.js `PATH`:
+
+```bash
+export NODE_OPTIONS="--dns-result-order=ipv4first"
+```
+
+This makes Node prefer the working IPv4 addresses instead of waiting on the
+broken IPv6 route. Also change the install line in
+`/var/www/sozamen/deploy.sh` from `npm ci` to:
+
+```bash
+timeout 20m npm ci --no-audit --no-fund --prefer-offline
+```
+
+This reuses valid cached downloads, skips the nonessential audit request during
+deployment, and stops the release after 20 minutes if registry connectivity is
+still unusable. Re-run `bash -n /var/www/sozamen/deploy.sh`, then run the same
+exact-SHA deployment command again. `npm ci` recreates its installation from the
+lockfile, so the partial `node_modules` directory is not a completed release.
+
+On the second manual diagnosis, npm still stalled with IPv4-first DNS and one
+download socket. A direct Node.js 22 HTTPS request also hung, while curl
+downloaded the same package quickly. Node.js 20.20.2 was then installed with
+NVM; its HTTPS test succeeded and `npm ci` installed all 70 packages in about
+one minute. The stable `node-current` link now points to Node.js 20.20.2.
+
+The remaining steps were completed manually: formatting passed, Prisma Client
+was generated, migration `20260904000000_init` was applied, Next.js compiled and
+generated all 17 pages, `current` was switched to commit
+`38e777b5950db2d8d568e1e6ece7552837ba5311`, and the service returned HTTP 200.
+The one-time seed created 5 users and 6 products.
 
 ## 9. Disable unused automation
 

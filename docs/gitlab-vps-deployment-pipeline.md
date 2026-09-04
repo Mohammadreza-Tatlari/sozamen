@@ -129,6 +129,7 @@ INCOMING="$APP_ROOT/incoming"
 COMMIT="${1:-}"
 NODE_BIN="/home/sozamen/.local/node-current/bin"
 export PATH="$NODE_BIN:$PATH"
+export NODE_OPTIONS="--dns-result-order=ipv4first"
 
 if [[ ! "$COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]; then
   echo "A full 40-character Git commit SHA is required."
@@ -161,7 +162,7 @@ ln -sfn "$SHARED/uploads/products" "$RELEASE/public/uploads/products"
 ln -sfn "$SHARED/uploads/profiles" "$RELEASE/public/uploads/profiles"
 
 cd "$RELEASE"
-npm ci
+timeout 20m npm ci --no-audit --no-fund --prefer-offline
 npm run format:check
 npx prisma generate
 

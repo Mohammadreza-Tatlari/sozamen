@@ -195,6 +195,7 @@ BACKUPS="$APP_ROOT/backups"
 COMMIT="${1:-}"
 NODE_BIN="/home/sozamen/.local/node-current/bin"
 export PATH="$NODE_BIN:$PATH"
+export NODE_OPTIONS="--dns-result-order=ipv4first"
 
 if [[ ! "$COMMIT" =~ ^[0-9a-fA-F]{40}$ ]]; then
   echo "A full 40-character Git commit SHA is required."
@@ -219,7 +220,7 @@ ln -sfn "$SHARED/uploads/products" "$RELEASE/public/uploads/products"
 ln -sfn "$SHARED/uploads/profiles" "$RELEASE/public/uploads/profiles"
 
 cd "$RELEASE"
-npm ci
+timeout 10m npm ci --no-audit --no-fund --prefer-offline
 npm run format:check
 npx prisma generate
 
@@ -265,15 +266,15 @@ inspect the paths with `ls -la` and confirm the symlinks point into
 
 ## 7. Configure systemd
 
-This project currently uses Prisma 6.16. Prisma 6 officially supports Node.js
-18, 20, and 22, but not Node.js 24. Although Node.js 24 may appear to work for
-some commands, use Node.js 22 LTS for this deployment. As `sozamen`, install and
-select it with NVM:
+This project uses Prisma 6, which supports Node.js 20. Node.js 22.23.2 was also
+installed during setup, but its native HTTPS requests to the npm registry hung
+on this VPS even though curl worked. The verified production runtime is
+Node.js 20.20.2. As `sozamen`, install and select Node.js 20 with NVM:
 
 ```bash
-nvm install 22
-nvm alias default 22
-nvm use 22
+nvm install 20
+nvm alias default 20
+nvm use 20
 node --version
 npm --version
 ```
@@ -341,7 +342,7 @@ sudo systemctl status sozamen --no-pager
 sudo journalctl -u sozamen -n 100 --no-pager
 ```
 
-After installing a newer compatible Node.js 22 release with NVM, select it and
+After installing a newer compatible Node.js 20 release with NVM, select it and
 recreate the `node-current` link before restarting the service. A system-wide
 production Node.js installation is another valid option and avoids NVM path
 handling entirely.
@@ -479,8 +480,9 @@ Based on the setup reported so far:
 - [x] `sozamen.service` has been created.
 - [x] A valid-looking multiline SSH host-key scan has been collected for
       `PROD_KNOWN_HOSTS`.
-- [x] Node.js 22.23.2 is installed and the stable `node-current` link resolves
-      to it.
+- [x] Node.js 20.20.2 is installed and the stable `node-current` link resolves
+      to it. Node.js 22.23.2 was rejected after its npm HTTPS traffic repeatedly
+      stalled on this VPS.
 - [x] The deployment PATH finds npm 10.9.8.
 - [x] The deployment script passes `bash -n`, and the systemd unit passes
       `systemd-analyze verify`.
