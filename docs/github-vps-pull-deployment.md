@@ -1,0 +1,214 @@
+# Manual GitHub-to-VPS pull deployment
+
+This guide is the current GitHub deployment method for Sozamen. The VPS can
+reach GitHub, but GitHub-hosted runners cannot reach the VPS on port 22. An
+administrator therefore starts each deployment manually from the VPS.
+
+No timer, cron job, webhook, or GitHub Actions connection is used. The existing
+release layout, persistent files, Prisma migrations, systemd service, health
+check, and rollback behavior remain unchanged.
+
+## 1. Deployment flow
+
+```text
+Developer
+    |
+    | push or merge reviewed changes to main
+    v
+GitHub repository
+    ^
+    | administrator manually fetches from VPS
+    |
+VPS /var/www/sozamen/repository
+    |
+    | resolve exact origin/main commit SHA
+    | run /var/www/sozamen/deploy.sh <SHA>
+    v
+New release -> Prisma migrate -> build -> symlink -> restart -> health check
+```
+
+The VPS initiates every network connection. GitHub never needs inbound access
+to the server.
+
+## 2. Prerequisites already completed
+
+The VPS audit confirmed:
+
+- The `sozamen` account exists.
+- `/var/www/sozamen/repository` is cloned.
+- Its `origin` uses
+  `git@github-sozamen:Mohammadreza-Tatlari/sozamen.git`.
+- The read-only GitHub deploy key and SSH alias work.
+- `/var/www/sozamen/deploy.sh` accepts a full commit SHA.
+- Node.js 22 is available through `/home/sozamen/.local/node-current`.
+- `sozamen` can restart only `sozamen.service` without a password.
+- Persistent `.env`, SQLite, uploads, releases, and backups are prepared.
+
+Before the first deployment, ensure `main` contains:
+
+```text
+prisma/migrations/migration_lock.toml
+prisma/migrations/20260904000000_init/migration.sql
+```
+
+## 3. Protect `main`
+
+The manual procedure deploys `origin/main`, so protect that branch:
+
+1. Open the GitHub repository rulesets or **Settings -> Branches**.
+2. Create a protection rule for `main`.
+3. Require pull-request review when multiple contributors are involved.
+4. Prevent force pushes and branch deletion.
+5. Restrict direct pushes as appropriate for the team.
+
+The VPS GitHub deploy key should remain read-only.
+
+## 4. Deploy the latest `main` manually
+
+Connect to the VPS and switch to the application user:
+
+```bash
+ssh YOUR_ADMIN_USER@185.164.73.204
+sudo -iu sozamen
+```
+
+Verify GitHub authentication when necessary:
+
+```bash
+ssh -T git@github-sozamen
+```
+
+Fetch GitHub without changing the working repository checkout:
+
+```bash
+git -C /var/www/sozamen/repository fetch --prune origin main
+```
+
+Inspect the commit that will be deployed:
+
+```bash
+git -C /var/www/sozamen/repository log -1 \
+  --format='%H %an %ad%n%s' origin/main
+```
+
+If it is the intended commit, resolve and deploy its full SHA:
+
+```bash
+TARGET_COMMIT="$(git -C /var/www/sozamen/repository rev-parse origin/main)"
+/var/www/sozamen/deploy.sh "$TARGET_COMMIT"
+```
+
+Do not use an ordinary `git pull` inside a release directory. `deploy.sh`
+creates an isolated release for the exact commit, applies migrations, builds it,
+switches the `current` symlink, restarts the application, and checks its health.
+
+## 5. Verify the deployment
+
+```bash
+readlink -f /var/www/sozamen/current
+git -C /var/www/sozamen/repository rev-parse origin/main
+systemctl status sozamen --no-pager
+curl -I http://127.0.0.1:3000
+journalctl -u sozamen -n 200 --no-pager
+```
+
+The last directory in the `current` path should match the `origin/main` commit
+SHA. Then verify the home page, login, products and images, cart and checkout,
+customer orders, and admin order management.
+
+## 6. First-deployment database seed
+
+The current production SQLite database was observed as fresh and zero bytes.
+The first `deploy.sh` run applies the committed initial Prisma migration and
+creates the tables.
+
+After that first successful deployment, seed demo data exactly once:
+
+```bash
+cd /var/www/sozamen/current
+export PATH="/home/sozamen/.local/node-current/bin:$PATH"
+npm run db:seed
+```
+
+Do not run the seed command during routine deployments.
+
+## 7. Normal update procedure
+
+For every later update:
+
+1. Develop and test locally.
+2. If the Prisma schema changes, create and commit a migration with
+   `npx prisma migrate dev --name describe_the_change`.
+3. Merge the reviewed change into `main`.
+4. Connect to the VPS and switch to `sozamen`.
+5. Fetch `origin/main` and inspect its commit.
+6. Run `deploy.sh` with that exact SHA.
+7. Verify the application and logs.
+
+This is manual continuous delivery: pushing code makes it available for
+deployment, but a human explicitly decides when production changes.
+
+## 8. Failure behavior
+
+- A GitHub, DNS, or network failure prevents `git fetch` but does not affect the
+  running release.
+- A dependency, formatting, migration, or build failure occurs before the
+  `current` symlink changes, so the previous release stays active.
+- A post-restart health-check failure makes `deploy.sh` restore the previous
+  release.
+- The deployment script backs up a nonempty SQLite database before applying
+  migrations.
+
+Inspect a failure with:
+
+```bash
+journalctl -u sozamen -n 300 --no-pager
+readlink -f /var/www/sozamen/current
+ls -lt /var/www/sozamen/releases
+```
+
+## 9. Disable unused automation
+
+The timer-based polling design is not being used. Do not create or enable these
+units:
+
+```text
+sozamen-deploy-poll.service
+sozamen-deploy-poll.timer
+```
+
+If they were previously installed, stop and disable the timer:
+
+```bash
+sudo systemctl disable --now sozamen-deploy-poll.timer
+```
+
+The GitHub Actions SSH workflow is also known to time out through the cloud
+provider. Disable its push trigger or disable the workflow in GitHub so routine
+pushes do not create expected failures. Disabling deployment automation does
+not stop the running `sozamen.service`.
+
+## 10. Manual-deployment checklist
+
+- [ ] Latest `main` contains the initial Prisma migration.
+- [ ] `main` is protected.
+- [ ] VPS-to-GitHub deploy key works.
+- [ ] `git fetch origin main` succeeds as `sozamen`.
+- [ ] Intended commit inspected before deployment.
+- [ ] `deploy.sh` completed successfully.
+- [ ] `current` matches the intended SHA.
+- [ ] Application service and HTTP health check pass.
+- [ ] Demo data seeded once after the first deployment.
+- [ ] GitHub Actions push trigger disabled.
+- [ ] No deployment polling timer is enabled.
+
+## 11. Future automation
+
+Manual deployment can later be replaced without changing the release layout:
+
+- Restore VPS polling with a systemd timer.
+- Use a self-hosted GitLab Runner to push release archives to the VPS.
+- Use another trusted self-hosted runner that can reach port 22.
+
+Until then, the manual exact-SHA procedure is simple, auditable, and compatible
+with the current network restrictions.

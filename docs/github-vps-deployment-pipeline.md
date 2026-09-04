@@ -492,11 +492,13 @@ Based on the setup reported so far:
 - [x] SSH files have restrictive permissions, persistent upload directories are
       populated, and the deployment user can restart the service without a
       password.
-- [ ] Commit and push `prisma/migrations`, which is required by
+- [x] Commit and push `prisma/migrations`, which is required by
       `prisma migrate deploy`.
-- [ ] Add `PROD_SSH_KEY` and the verified `PROD_KNOWN_HOSTS` as GitHub secrets.
-- [ ] Add `PROD_HOST` and `PROD_USER` as GitHub variables.
-- [ ] Add and test the GitHub Actions workflow.
+- [x] Add `PROD_SSH_KEY` and the verified `PROD_KNOWN_HOSTS` as GitHub secrets.
+- [x] Add `PROD_HOST` and `PROD_USER` as GitHub variables.
+- [x] Add the GitHub Actions workflow and verify its SSH-key validation.
+- [ ] Complete a deployment. This is paused because the cloud-provider/network
+      path times out between GitHub-hosted runners and VPS port 22.
 
 The sudo policy currently lists the same `systemctl restart sozamen` permission
 twice. This is harmless, but one duplicate line can be removed from the sudoers
@@ -504,6 +506,25 @@ configuration later. The unfinished release
 `133681e0421576a805f28983eb86569d271aa7c4` has no migrations and is not linked
 as `current`; a new pushed commit receives a different release directory, so it
 does not block the next deployment.
+
+### Current pipeline decision
+
+The GitHub-hosted runner pipeline remains in the repository but is paused. Two
+runs reached the SSH command and timed out before authentication despite a valid
+workflow, environment configuration, private key, reachable SSH service, and
+successful SSH access from another external client. The remaining issue is in
+the cloud-provider or network path rather than the project or key configuration.
+
+Because the VPS can make outbound connections to GitHub, releases are currently
+performed using the
+[manual GitHub-to-VPS deployment guide](./github-vps-pull-deployment.md). It
+requires no inbound GitHub-to-VPS connection and no polling timer.
+
+Deployment work will continue later using the user's self-hosted GitLab. The
+VPS release layout, `deploy.sh`, systemd service, shared directories, and Prisma
+migration process can be reused. Only the CI configuration and runner-to-VPS
+connection need to be adapted. Continue with the
+[self-hosted GitLab deployment guide](./gitlab-vps-deployment-pipeline.md).
 
 ## 11. Add the GitHub Actions workflow
 
@@ -714,43 +735,14 @@ Prevention/document change:
   inspect the VPS provider firewall and consider a self-hosted runner or a
   server-side pull timer rather than broadly opening SSH to large address
   ranges.
+- **Second-run result:** The corrected workflow validated and explicitly loaded
+  `~/.ssh/id_ed25519`, but SSH timed out again before authentication.
+- **Conclusion:** The cloud-provider/network path is preventing GitHub-hosted
+  runners from reaching VPS port 22. The workflow, secrets, variables, and SSH
+  key are not the cause.
+- **Status:** GitHub deployment is paused. The configuration is retained for
+  reference, and deployment work will continue later using self-hosted GitLab.
 
-### 2026-09-04 - GitHub-hosted runner timed out connecting to VPS port 22
-
-- **Stage:** First GitHub Actions deployment.
-- **Symptom:** The deploy job reported
-  `ssh: connect to host 185.164.73.204 port 22: Connection timed out`.
-- **Meaning:** The TCP connection was not established, so SSH never attempted
-  public-key authentication. Missing or invalid keys instead normally produce
-  a key-loading error or `Permission denied (publickey)`.
-- **Verified:** The `production` environment contains the correctly named
-  secrets and variables. The VPS SSH service is active and listening on both
-  `0.0.0.0:22` and `[::]:22`, and an external key-based connection succeeds.
-  `fail2ban` is active.
-- **Workflow improvement:** Validate that the secret files are non-empty, parse
-  the private key with `ssh-keygen`, explicitly select it using `ssh -i`, enable
-  `IdentitiesOnly`, and use a 20-second connection timeout.
-- **Root-level checks:** On the VPS, run:
-
-  ```bash
-  sudo ufw status verbose
-  sudo fail2ban-client status
-  sudo fail2ban-client status sshd
-  sudo journalctl -u ssh --since "30 minutes ago" --no-pager
-  sudo ss -ltnp | grep ':22'
-  ```
-
-  If the GitHub attempt does not appear in the SSH journal, traffic is being
-  dropped before it reaches `sshd`, usually by UFW, the hosting-provider
-  firewall, fail2ban, or an upstream network path. Do not disable the firewall
-  or SSH host-key checking. Review the narrow rule or ban responsible.
-- **Next diagnostic:** Re-run the job once. GitHub-hosted runners are ephemeral,
-  so a retry uses another runner and may distinguish a transient route or banned
-  source address from a persistent firewall policy. If every runner times out,
-  inspect the VPS provider firewall and consider a self-hosted runner or a
-  server-side pull timer rather than broadly opening SSH to large address
-  ranges.
-  
 ## 17. Future production improvements
 
 Before this MVP serves important customer traffic:
