@@ -715,6 +715,42 @@ Prevention/document change:
   server-side pull timer rather than broadly opening SSH to large address
   ranges.
 
+### 2026-09-04 - GitHub-hosted runner timed out connecting to VPS port 22
+
+- **Stage:** First GitHub Actions deployment.
+- **Symptom:** The deploy job reported
+  `ssh: connect to host 185.164.73.204 port 22: Connection timed out`.
+- **Meaning:** The TCP connection was not established, so SSH never attempted
+  public-key authentication. Missing or invalid keys instead normally produce
+  a key-loading error or `Permission denied (publickey)`.
+- **Verified:** The `production` environment contains the correctly named
+  secrets and variables. The VPS SSH service is active and listening on both
+  `0.0.0.0:22` and `[::]:22`, and an external key-based connection succeeds.
+  `fail2ban` is active.
+- **Workflow improvement:** Validate that the secret files are non-empty, parse
+  the private key with `ssh-keygen`, explicitly select it using `ssh -i`, enable
+  `IdentitiesOnly`, and use a 20-second connection timeout.
+- **Root-level checks:** On the VPS, run:
+
+  ```bash
+  sudo ufw status verbose
+  sudo fail2ban-client status
+  sudo fail2ban-client status sshd
+  sudo journalctl -u ssh --since "30 minutes ago" --no-pager
+  sudo ss -ltnp | grep ':22'
+  ```
+
+  If the GitHub attempt does not appear in the SSH journal, traffic is being
+  dropped before it reaches `sshd`, usually by UFW, the hosting-provider
+  firewall, fail2ban, or an upstream network path. Do not disable the firewall
+  or SSH host-key checking. Review the narrow rule or ban responsible.
+- **Next diagnostic:** Re-run the job once. GitHub-hosted runners are ephemeral,
+  so a retry uses another runner and may distinguish a transient route or banned
+  source address from a persistent firewall policy. If every runner times out,
+  inspect the VPS provider firewall and consider a self-hosted runner or a
+  server-side pull timer rather than broadly opening SSH to large address
+  ranges.
+  
 ## 17. Future production improvements
 
 Before this MVP serves important customer traffic:

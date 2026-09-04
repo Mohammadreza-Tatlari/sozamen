@@ -27,17 +27,37 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$PROD_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
-          test -s ~/.ssh/id_ed25519
-          test -s ~/.ssh/known_hosts
-          ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
 
       - name: Deploy exact commit
         env:
           PROD_HOST: ${{ vars.PROD_HOST }}
           PROD_USER: ${{ vars.PROD_USER }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 \
-            -o IdentitiesOnly=yes \
-            -o ConnectTimeout=20 \
-            "$PROD_USER@$PROD_HOST" \
-            "/var/www/sozamen/deploy.sh '${{ github.sha }}'"
+          ssh "$PROD_USER@$PROD_HOST" \
+            "/var/www/sozamen/deploy.sh '${{ gith##[debug]Loading inputs
+##[debug]Evaluating: format('ssh "$PROD_USER@$PROD_HOST" \
+##[debug]  "/var/www/sozamen/deploy.sh ''{0}''"
+##[debug]', github.sha)
+##[debug]Evaluating format:
+##[debug]..Evaluating String:
+##[debug]..=> 'ssh "$PROD_USER@$PROD_HOST" \
+##[debug]  "/var/www/sozamen/deploy.sh ''{0}''"
+##[debug]'
+##[debug]..Evaluating Index:
+##[debug]....Evaluating github:
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'sha'
+##[debug]..=> '35b13a2fe3c8f613fa36323bea22e5bb253528e2'
+##[debug]=> 'ssh "$PROD_USER@$PROD_HOST" \
+##[debug]  "/var/www/sozamen/deploy.sh ''35b13a2fe3c8f613fa36323bea22e5bb253528e2''"
+##[debug]'
+##[debug]Result: 'ssh "$PROD_USER@$PROD_HOST" \
+##[debug]  "/var/www/sozamen/deploy.sh ''35b13a2fe3c8f613fa36323bea22e5bb253528e2''"
+##[debug]'
+##[debug]Loading env
+Run ssh "$PROD_USER@$PROD_HOST" \
+##[debug]/usr/bin/bash -e /home/runner/work/_temp/57c08fc0-a620-48e2-92fb-b08cb1c7ce32.sh
+ssh: connect to host 185.164.73.204 port 22: Connection timed out
+Error: Process completed with exit code 255.
+##[debug]Finishing: Deploy exact commitub.sha }}'"
