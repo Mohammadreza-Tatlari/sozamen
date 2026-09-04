@@ -539,13 +539,19 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$PROD_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
+          test -s ~/.ssh/id_ed25519
+          test -s ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
 
       - name: Deploy exact commit
         env:
           PROD_HOST: ${{ vars.PROD_HOST }}
           PROD_USER: ${{ vars.PROD_USER }}
         run: |
-          ssh "$PROD_USER@$PROD_HOST" \
+          ssh -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            -o ConnectTimeout=20 \
+            "$PROD_USER@$PROD_HOST" \
             "/var/www/sozamen/deploy.sh '${{ github.sha }}'"
 ```
 
@@ -671,6 +677,43 @@ Prevention/document change:
   `origin` URL to use that alias.
 - **Prevention:** Keep `IdentitiesOnly yes` in the SSH alias and use the alias in
   every repository remote URL on this VPS.
+
+### 2026-09-04 - GitHub-hosted runner timed out connecting to VPS port 22
+
+- **Stage:** First GitHub Actions deployment.
+- **Symptom:** The deploy job reported
+  `ssh: connect to host 185.164.73.204 port 22: Connection timed out`.
+- **Meaning:** The TCP connection was not established, so SSH never attempted
+  public-key authentication. Missing or invalid keys instead normally produce
+  a key-loading error or `Permission denied (publickey)`.
+- **Verified:** The `production` environment contains the correctly named
+  secrets and variables. The VPS SSH service is active and listening on both
+  `0.0.0.0:22` and `[::]:22`, and an external key-based connection succeeds.
+  `fail2ban` is active.
+- **Workflow improvement:** Validate that the secret files are non-empty, parse
+  the private key with `ssh-keygen`, explicitly select it using `ssh -i`, enable
+  `IdentitiesOnly`, and use a 20-second connection timeout.
+- **Root-level checks:** On the VPS, run:
+
+  ```bash
+  sudo ufw status verbose
+  sudo fail2ban-client status
+  sudo fail2ban-client status sshd
+  sudo journalctl -u ssh --since "30 minutes ago" --no-pager
+  sudo ss -ltnp | grep ':22'
+  ```
+
+  If the GitHub attempt does not appear in the SSH journal, traffic is being
+  dropped before it reaches `sshd`, usually by UFW, the hosting-provider
+  firewall, fail2ban, or an upstream network path. Do not disable the firewall
+  or SSH host-key checking. Review the narrow rule or ban responsible.
+
+- **Next diagnostic:** Re-run the job once. GitHub-hosted runners are ephemeral,
+  so a retry uses another runner and may distinguish a transient route or banned
+  source address from a persistent firewall policy. If every runner times out,
+  inspect the VPS provider firewall and consider a self-hosted runner or a
+  server-side pull timer rather than broadly opening SSH to large address
+  ranges.
 
 ## 17. Future production improvements
 
