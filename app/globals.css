@@ -35,6 +35,93 @@ textarea {
 button {
   cursor: pointer;
 }
+.route-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(255, 250, 245, 0.58);
+  backdrop-filter: blur(14px) saturate(0.85);
+}
+.route-loading-card {
+  width: min(88vw, 330px);
+  display: grid;
+  justify-items: center;
+  padding: 22px 24px 25px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 32px;
+  background: rgba(255, 253, 251, 0.9);
+  box-shadow: 0 24px 70px rgba(102, 65, 61, 0.16);
+  text-align: center;
+}
+.route-loading-illustration {
+  width: min(64vw, 250px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 28px;
+  animation: cat-wash 1.15s ease-in-out infinite;
+}
+.route-loading-illustration img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.route-loading-card p {
+  margin: 12px 0 10px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.8;
+}
+.route-loading-dots {
+  display: flex;
+  gap: 7px;
+  direction: ltr;
+}
+.route-loading-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rose);
+  animation: loading-drop 1s ease-in-out infinite;
+}
+.route-loading-dots i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.route-loading-dots i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+@keyframes cat-wash {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.7deg) scale(1);
+  }
+  50% {
+    transform: translateY(-7px) rotate(0.7deg) scale(1.018);
+  }
+}
+@keyframes loading-drop {
+  0%,
+  60%,
+  100% {
+    opacity: 0.34;
+    transform: translateY(0) scale(0.82);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-loading-illustration,
+  .route-loading-dots i {
+    animation: none;
+  }
+}
 .preview-gate {
   position: fixed;
   inset: 0;

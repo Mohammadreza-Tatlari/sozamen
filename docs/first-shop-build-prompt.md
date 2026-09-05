@@ -16,6 +16,16 @@ Build a minimal, modular e-commerce web app called **Sozamen** using **Next.js (
 - The mobile menu closes from its close button, backdrop, selected link, or Escape key.
 - Product grids, hero content, product details, cart rows, checkout summaries, profile panels, admin rows, order details, forms, and footer columns adapt to narrow screens.
 - Keep account and cart actions visible in the mobile header.
+- During real route loading, show the supplied cat-washing illustration in a
+  centered, responsive loading card over a blurred page backdrop. Motion must
+  respect the user's reduced-motion preference and must not add an artificial
+  delay. Serve a small dedicated WebP directly from `/icons` so the loading
+  artwork does not depend on the Next.js image optimizer or the preview-access
+  middleware.
+- Temporary MVP review setting: keep the loading screen visible for at least
+  400 ms on initial render and internal link navigation. Remove
+  `TemporaryLoadingGate` when reviewers no longer need the animation slowed
+  down for inspection.
 
 ## Tech Stack
 
