@@ -176,7 +176,11 @@ npm run build
 ln -sfn "$RELEASE" "$APP_ROOT/current"
 sudo systemctl restart sozamen
 
-if ! curl --fail --silent --show-error --retry 10 --retry-delay 2 \
+if ! curl --fail --silent --show-error \
+  --retry 15 \
+  --retry-delay 2 \
+  --retry-connrefused \
+  --connect-timeout 3 \
   http://127.0.0.1:3000/ >/dev/null; then
   if [[ -n "$PREVIOUS" && -d "$PREVIOUS" ]]; then
     ln -sfn "$PREVIOUS" "$APP_ROOT/current"

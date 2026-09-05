@@ -1,5 +1,6 @@
 "use client";
 import { ShoppingBag } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 export type CartProduct = {
   id: number;
@@ -9,11 +10,25 @@ export type CartProduct = {
   stock: number;
   quantity: number;
 };
-export function AddToCart({ product }: { product: Omit<CartProduct, "quantity"> }) {
+export function AddToCart({
+  product,
+  isAuthenticated,
+}: {
+  product: Omit<CartProduct, "quantity">;
+  isAuthenticated: boolean;
+}) {
+  const router = useRouter();
   const [done, setDone] = useState(false),
     [quantity, setQuantity] = useState(1);
+
   function add() {
-    const cart: CartProduct[] = JSON.parse(localStorage.getItem("sozamen-cart") || "[]");
+    let cart: CartProduct[] = [];
+    try {
+      cart = JSON.parse(localStorage.getItem("sozamen-cart") || "[]");
+    } catch {
+      localStorage.removeItem("sozamen-cart");
+    }
+
     const old = cart.find((x) => x.id === product.id);
     if (old) {
       old.stock = product.stock;
@@ -21,6 +36,12 @@ export function AddToCart({ product }: { product: Omit<CartProduct, "quantity"> 
     } else cart.push({ ...product, quantity: Math.min(quantity, product.stock) });
     localStorage.setItem("sozamen-cart", JSON.stringify(cart));
     dispatchEvent(new Event("cart-change"));
+
+    if (!isAuthenticated) {
+      router.push("/login?next=/cart");
+      return;
+    }
+
     setDone(true);
     setTimeout(() => setDone(false), 1500);
   }
@@ -52,7 +73,11 @@ export function AddToCart({ product }: { product: Omit<CartProduct, "quantity"> 
       </div>
       <button className="button" onClick={add}>
         <ShoppingBag size={18} />
-        {done ? `${quantity} عدد اضافه شد` : "افزودن به سبد"}
+        {done
+          ? `${quantity} عدد اضافه شد`
+          : isAuthenticated
+            ? "افزودن به سبد"
+            : "ورود و افزودن به سبد"}
       </button>
     </div>
   );

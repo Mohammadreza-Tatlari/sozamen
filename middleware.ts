@@ -19,7 +19,13 @@ export async function middleware(req: NextRequest) {
   }
 
   const has = req.cookies.has("sozamen_session");
-  if (!has && (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))) {
+  if (
+    !has &&
+    (pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/admin") ||
+      pathname === "/cart" ||
+      pathname === "/checkout")
+  ) {
     const url = new URL("/login", req.url);
     url.searchParams.set("next", req.nextUrl.pathname);
     return NextResponse.redirect(url);

@@ -54,6 +54,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               : "ناموجود"}
           </div>
           <AddToCart
+            isAuthenticated={Boolean(user)}
             product={{
               id: product.id,
               name: product.name,

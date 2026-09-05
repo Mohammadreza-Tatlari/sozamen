@@ -3,11 +3,16 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { makeSession } from "@/lib/auth/session";
 import { otpProvider } from "@/lib/auth/provider";
+
+function safeDestination(value: string) {
+  return value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
+}
+
 async function login(formData: FormData) {
   "use server";
   const phone = String(formData.get("phone") || "").trim();
   const code = String(formData.get("code") || "").trim();
-  const next = String(formData.get("next") || "/dashboard");
+  const next = safeDestination(String(formData.get("next") || "/dashboard"));
   if (!/^09\d{9}$/.test(phone) || !(await otpProvider.verify(phone, code)))
     redirect(`/login?error=1&next=${encodeURIComponent(next)}`);
   const user = await db.user.upsert({
@@ -21,7 +26,7 @@ async function login(formData: FormData) {
     path: "/",
     maxAge: 60 * 60 * 24 * 14,
   });
-  redirect(next.startsWith("/") ? next : "/dashboard");
+  redirect(next);
 }
 export default async function Login({
   searchParams,
@@ -35,7 +40,7 @@ export default async function Login({
       <h1>ورود به حساب</h1>
       <p>شماره موبایل و یک کد ۴ تا ۶ رقمی دلخواه وارد کنید.</p>
       {q.error && <div className="notice">شماره موبایل یا کد وارد شده معتبر نیست.</div>}
-      <input type="hidden" name="next" value={q.next || "/dashboard"} />
+      <input type="hidden" name="next" value={safeDestination(q.next || "/dashboard")} />
       <div className="field">
         <label>شماره موبایل</label>
         <input name="phone" inputMode="tel" placeholder="09120000000" required />

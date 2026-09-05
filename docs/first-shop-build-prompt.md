@@ -73,6 +73,9 @@ Same simple product card style as the Home bestsellers section, in a full grid l
 ### 5. Cart & Checkout
 
 - Add to cart, view cart, adjust quantities, checkout form (confirm address/name/phone), place order.
+- Cart and checkout require login. If a guest chooses a product, preserve the
+  chosen product and quantity, redirect to login, then return them to the cart
+  with that selection available.
 - Customers can select multiple units before adding a product, and cart quantities cannot exceed current stock.
 - Checkout validates stock server-side and reduces inventory atomically when the order is placed.
 - Payment step: mock payment screen ("Pay" button that always succeeds, or simulate success/fail) — implemented behind a `PaymentProvider` interface so a real gateway can be swapped in later.
@@ -84,11 +87,13 @@ Same simple product card style as the Home bestsellers section, in a full grid l
 - View/edit profile: profile picture, name, phone, and address.
 - Profile pictures accept PNG, JPEG, or WebP files up to 3 MB and are stored locally under `/public/uploads/profiles/`.
 - View checkout and payment history with purchased items, quantities, totals, status, and order date.
+- Display every customer-facing order status with a Persian label.
 - Show the unique tracking code directly below each order number in customer history.
 - Provide a clear logout action that removes the session cookie and returns the user home.
 
 ### 7. Admin Dashboard
 
+- Do not show the customer-only "خریدهای من" section on an administrator profile.
 - Customer list with their info (name, phone, address, order count)
 - Product management (list/add/edit/delete) — can live here and/or via the inline pencil icon on the shop page (build both entry points using the same shared component)
 - Product add/edit forms include a non-negative inventory count.

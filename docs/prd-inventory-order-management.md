@@ -10,15 +10,21 @@ Give customers explicit quantity controls and give administrators enough invento
 
 ## Customer requirements
 
+- Guests who open the cart or checkout are redirected to login.
+- When a guest chooses a product and quantity, the selection is preserved in
+  the browser, login returns them to the cart, and the selected item is ready
+  for checkout.
 - Product details show current availability.
 - Customers can select a quantity before adding an item to the cart.
 - Cart quantity cannot exceed the product's known stock.
 - Checkout validates inventory again on the server to prevent stale or modified cart data from overselling.
 - Successful checkout reduces stock within the same database transaction that creates the order.
 - Product comments, comment input, and placeholder text use RTL direction and right alignment.
+- Customer-facing order statuses always use Persian labels.
 
 ## Administrator requirements
 
+- The administrator profile does not show the customer-only purchase history.
 - Product forms contain a required, non-negative stock field.
 - The dashboard lists individual orders instead of showing only the total order count.
 - Order summaries include the customer, item count, total, and status.

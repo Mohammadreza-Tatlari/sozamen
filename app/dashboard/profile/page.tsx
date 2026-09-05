@@ -5,6 +5,7 @@ import { Camera, LogOut, PackageCheck, UserRound } from "lucide-react";
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/auth/session";
 import { money } from "@/lib/format";
+import { orderStatusLabel } from "@/lib/orders";
 import { saveProfileImage } from "@/lib/uploads";
 async function updateProfile(fd: FormData) {
   "use server";
@@ -40,11 +41,14 @@ export default async function Profile({
   const user = await getUser();
   if (!user) redirect("/login?next=/dashboard/profile");
   const q = await searchParams;
-  const orders = await db.order.findMany({
-    where: { userId: user.id },
-    include: { items: { include: { product: true } } },
-    orderBy: { createdAt: "desc" },
-  });
+  const orders =
+    user.role === "admin"
+      ? []
+      : await db.order.findMany({
+          where: { userId: user.id },
+          include: { items: { include: { product: true } } },
+          orderBy: { createdAt: "desc" },
+        });
   return (
     <div className="container profile-layout">
       <aside className="panel profile-summary">
@@ -107,57 +111,61 @@ export default async function Profile({
             <button className="button">ذخیره تغییرات</button>
           </form>
         </section>
-        <section className="panel orders-panel">
-          <div className="profile-section-title">
-            <div>
-              <span className="section-kicker">خریدهای من</span>
-              <h2>سفارش‌ها و پرداخت‌ها</h2>
+        {user.role !== "admin" && (
+          <section className="panel orders-panel">
+            <div className="profile-section-title">
+              <div>
+                <span className="section-kicker">خریدهای من</span>
+                <h2>سفارش‌ها و پرداخت‌ها</h2>
+              </div>
+              <PackageCheck size={27} />
             </div>
-            <PackageCheck size={27} />
-          </div>
-          {orders.length ? (
-            orders.map((o) => (
-              <article className="profile-order" key={o.id}>
-                <div className="order-heading">
-                  <div>
-                    <b>سفارش شماره {o.id}</b>
-                    <span className="tracking-code">
-                      کد پیگیری: <b>{o.trackingCode}</b>
-                    </span>
-                    <small>
-                      {new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium" }).format(
-                        o.createdAt,
-                      )}
-                    </small>
-                  </div>
-                  <span className="status">{o.status === "paid" ? "پرداخت شده" : o.status}</span>
-                </div>
-                <div className="order-products">
-                  {o.items.map((i) => (
-                    <div key={i.id}>
-                      <img src={i.product.imageUrl} alt="" />
-                      <span>
-                        {i.product.name} × {i.quantity}
+            {orders.length ? (
+              orders.map((o) => (
+                <article className="profile-order" key={o.id}>
+                  <div className="order-heading">
+                    <div>
+                      <b>سفارش شماره {o.id}</b>
+                      <span className="tracking-code">
+                        کد پیگیری: <b>{o.trackingCode}</b>
                       </span>
+                      <small>
+                        {new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium" }).format(
+                          o.createdAt,
+                        )}
+                      </small>
                     </div>
-                  ))}
-                </div>
-                <strong>
-                  {money(o.items.reduce((s, i) => s + i.priceAtPurchase * i.quantity, 0))}
-                </strong>
-              </article>
-            ))
-          ) : (
-            <div className="empty">
-              هنوز خریدی ثبت نکرده‌اید.
-              <br />
-              <br />
-              <Link className="button" href="/shop">
-                مشاهده محصولات
-              </Link>
-            </div>
-          )}
-        </section>
+                    <span className={`status status-${o.status}`}>
+                      {orderStatusLabel(o.status)}
+                    </span>
+                  </div>
+                  <div className="order-products">
+                    {o.items.map((i) => (
+                      <div key={i.id}>
+                        <img src={i.product.imageUrl} alt="" />
+                        <span>
+                          {i.product.name} × {i.quantity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <strong>
+                    {money(o.items.reduce((s, i) => s + i.priceAtPurchase * i.quantity, 0))}
+                  </strong>
+                </article>
+              ))
+            ) : (
+              <div className="empty">
+                هنوز خریدی ثبت نکرده‌اید.
+                <br />
+                <br />
+                <Link className="button" href="/shop">
+                  مشاهده محصولات
+                </Link>
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

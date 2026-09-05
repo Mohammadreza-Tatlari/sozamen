@@ -114,6 +114,13 @@ Do not commit the real password. Because each release links the shared `.env`,
 the setting survives future deployments. Restarting the application is required
 after changing or removing it.
 
+Apply an environment-only change without rebuilding:
+
+```bash
+sudo systemctl restart sozamen
+sudo systemctl status sozamen --no-pager
+```
+
 Keep `PREVIEW_COOKIE_SECURE` set to `true` when using HTTPS. If you are still
 temporarily opening `http://SERVER_IP:3000`, set it to `false`; otherwise the
 browser will not send the preview cookie over the unencrypted connection. This
@@ -184,6 +191,68 @@ journalctl -u sozamen -n 300 --no-pager
 readlink -f /var/www/sozamen/current
 ls -lt /var/www/sozamen/releases
 ```
+
+### Health check runs before Next.js is ready
+
+Next.js can take several seconds to listen after systemd restarts it. A plain
+`curl --retry` does not retry a refused TCP connection by default, so the
+deployment may incorrectly report this failure and restore the previous
+release:
+
+```text
+curl: (7) Failed to connect to 127.0.0.1 port 3000
+Health check failed; the previous release was restored.
+```
+
+Use this complete health-check block in `/var/www/sozamen/deploy.sh`:
+
+```bash
+if ! curl --fail --silent --show-error \
+  --retry 15 \
+  --retry-delay 2 \
+  --retry-connrefused \
+  --connect-timeout 3 \
+  http://127.0.0.1:3000/ >/dev/null; then
+  if [[ -n "$PREVIOUS" && -d "$PREVIOUS" ]]; then
+    ln -sfn "$PREVIOUS" "$APP_ROOT/current"
+    sudo systemctl restart sozamen
+  fi
+  echo "Health check failed; the previous release was restored."
+  exit 1
+fi
+```
+
+Replace the old block instead of inserting this below its first line. If two
+`if ! curl` lines are accidentally combined, curl interprets shell words such
+as `if` and `curl` as hostnames and reports `Could not resolve host: if`.
+Always validate the edited script before deploying:
+
+```bash
+bash -n /var/www/sozamen/deploy.sh
+```
+
+After a successful run, confirm both the selected release and local HTTP
+response:
+
+```bash
+readlink -f /var/www/sozamen/current
+systemctl status sozamen --no-pager
+curl -I http://127.0.0.1:3000
+```
+
+### Preview password repeatedly returns to the access page
+
+When the application is temporarily accessed at `http://SERVER_IP:3000`, a
+cookie marked `Secure` is intentionally not sent by the browser. Set the
+persistent VPS environment to the HTTP-only testing value:
+
+```env
+PREVIEW_COOKIE_SECURE="false"
+```
+
+Restart `sozamen.service`, then submit the preview password again. Change this
+setting back to `true` as soon as Nginx and HTTPS are enabled. The application
+source, database, and dependencies do not need to be rebuilt for this setting.
 
 ### `npm ci` appears to run forever
 

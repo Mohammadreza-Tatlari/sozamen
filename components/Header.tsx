@@ -30,9 +30,13 @@ export async function Header() {
               <UserRound size={19} />
             )}
           </Link>
-          <Link className="icon-btn" href="/cart" aria-label="سبد خرید">
+          <Link
+            className="icon-btn"
+            href={user ? "/cart" : "/login?next=/cart"}
+            aria-label={user ? "سبد خرید" : "ورود برای مشاهده سبد خرید"}
+          >
             <ShoppingBag size={19} />
-            <CartBadge />
+            {user && <CartBadge />}
           </Link>
         </div>
       </div>
